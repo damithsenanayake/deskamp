@@ -9,6 +9,8 @@ let audioContext = null;
 let analyser = null;
 let filters = [];
 let lastProgress = 0;
+let lastPlaylistCurrent = null;
+let lastPlaylistQuery = null;
 const audio = $('audio');
 const bands = [
   { label: '60 HZ', frequency: 60, type: 'lowshelf' },
@@ -24,6 +26,27 @@ function formatTime(seconds) {
 }
 function rangeFill(input, percent) { input.style.setProperty('--fill', `${Math.max(0, Math.min(100, percent))}%`); }
 function dispatch(type, value) { return api.dispatch(type, value); }
+function bindWheelAdjust(hoverArea, input, amount) {
+  let pending = 0;
+  let lastWheel = 0;
+  hoverArea.addEventListener('wheel', event => {
+    event.preventDefault();
+    if (!event.deltaY) return;
+    const now = performance.now();
+    if (now - lastWheel > 250 || Math.sign(pending) === Math.sign(event.deltaY)) pending = 0;
+    lastWheel = now;
+    const direction = -Math.sign(event.deltaY);
+    const wheelTick = event.deltaMode !== 0 || Math.abs(event.deltaY) >= 80;
+    pending += wheelTick ? direction : -event.deltaY / 30;
+    const steps = Math.trunc(pending);
+    pending -= steps;
+    if (!steps) return;
+    const next = Math.max(Number(input.min), Math.min(Number(input.max), Number(input.value) + steps * amount));
+    if (next === Number(input.value)) return;
+    input.value = String(next);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }, { passive: false });
+}
 
 function ensureAudioGraph() {
   if (audioContext) return;
@@ -132,6 +155,7 @@ function bindPlayer() {
   $('repeat').addEventListener('click', () => dispatch('toggle-repeat'));
   $('mute').addEventListener('click', () => dispatch('toggle-mute'));
   $('volume').addEventListener('input', event => { rangeFill(event.target, Number(event.target.value)); dispatch('set-volume', Number(event.target.value)); });
+  bindWheelAdjust($('volume'), $('volume'), 2);
   $('seek').addEventListener('input', event => { if (audio.duration) { audio.currentTime = Number(event.target.value) / 1000 * audio.duration; dispatch('player-progress', audio.currentTime); } });
   $('show-eq').addEventListener('click', () => dispatch('window', { kind: 'equalizer', command: 'toggle' }));
   $('show-playlist').addEventListener('click', () => dispatch('window', { kind: 'playlist', command: 'toggle' }));
@@ -172,6 +196,7 @@ function bindEq() {
     input.addEventListener('input', () => { output.textContent = `${Number(input.value) > 0 ? '+' : ''}${input.value} dB`; dispatch('eq-set', { index, gain: Number(input.value) }); });
     const label = document.createElement('label'); label.textContent = band.label;
     element.append(output, input, label);
+    bindWheelAdjust(element, input, 1);
     $('eq-bands').append(element);
   });
   $('eq-toggle').addEventListener('click', () => dispatch('eq-toggle'));
@@ -182,6 +207,7 @@ function createTrackRow(track, index) {
   const row = document.createElement('div');
   row.className = `track-row${index === state.current ? ' current' : ''}`;
   row.setAttribute('role', 'listitem'); row.tabIndex = 0;
+  if (index === state.current) row.setAttribute('aria-current', 'true');
   const number = document.createElement('span'); number.className = 'track-index'; number.textContent = String(index + 1).padStart(2, '0');
   const details = document.createElement('div'); details.className = 'track-details';
   const icon = document.createElement('span'); icon.className = 'track-icon'; icon.textContent = index === state.current && state.playing ? '▶' : '♪';
@@ -203,8 +229,22 @@ function createTrackRow(track, index) {
 function renderPlaylist() {
   const query = $('search').value.trim().toLowerCase();
   const list = $('track-list');
+  const scrollTop = list.scrollTop;
+  const revealCurrent = state.current !== lastPlaylistCurrent || query !== lastPlaylistQuery;
+  lastPlaylistCurrent = state.current;
+  lastPlaylistQuery = query;
+  let currentRow = null;
   list.replaceChildren();
-  state.tracks.forEach((track, index) => { if (!query || `${track.title} ${track.artist} ${track.format}`.toLowerCase().includes(query)) list.append(createTrackRow(track, index)); });
+  state.tracks.forEach((track, index) => {
+    if (query && !`${track.title} ${track.artist} ${track.format}`.toLowerCase().includes(query)) return;
+    const row = createTrackRow(track, index);
+    if (index === state.current) currentRow = row;
+    list.append(row);
+  });
+  list.scrollTop = scrollTop;
+  if (revealCurrent && currentRow) requestAnimationFrame(() => {
+    if (currentRow.isConnected) currentRow.scrollIntoView({ block: 'nearest' });
+  });
   const empty = state.tracks.length === 0;
   list.hidden = empty;
   $('empty-state').hidden = !empty;

@@ -22,6 +22,8 @@ Use **+ FILES** or **+ FOLDER** in the playlist window, or drop files and folder
 
 Click a playlist row to play it. Right-click one to reveal its file. Use × to remove a row. Shuffle and repeat are on the player; repeat cycles through off, all, and one.
 
+Hover over an equalizer band or the volume slider and use the mouse wheel to adjust it. The playlist brings the current track into view when playback changes tracks.
+
 DeskAmp lists MP3, M4A, AAC, WAV, FLAC, OGG, Opus, WebM, and AIFF. Playback support for a format depends on Electron/Chromium and the operating system.
 
 ## Package
