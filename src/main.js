@@ -2,10 +2,13 @@ const { app, BrowserWindow, dialog, ipcMain, screen, shell, webUtils } = require
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { GAP, followersBelow, findVerticalSnap } = require('./docking');
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg', '.opus', '.webm', '.aiff', '.aif']);
 const windows = new Map();
 const snapTimers = new Map();
+const lastBounds = new Map();
+const expectedMoves = new Map();
 let saveTimer;
 let state = {
   tracks: [], current: -1, playing: false, time: 0, duration: 0,
@@ -89,24 +92,56 @@ async function restoreLibrary() {
   }
 }
 
-function snapWindow(win) {
-  if (win.isDestroyed() || !win.isVisible()) return;
-  const bounds = win.getBounds();
-  let bestX = bounds.x;
-  let bestY = bounds.y;
-  let dx = 17;
-  let dy = 17;
-  for (const other of windows.values()) {
-    if (other === win || other.isDestroyed() || !other.isVisible()) continue;
-    const target = other.getBounds();
-    const verticalOverlap = bounds.y < target.y + target.height && bounds.y + bounds.height > target.y;
-    const horizontalOverlap = bounds.x < target.x + target.width && bounds.x + bounds.width > target.x;
-    const xOptions = verticalOverlap ? [target.x, target.x + target.width, target.x - bounds.width] : [target.x];
-    const yOptions = horizontalOverlap ? [target.y, target.y + target.height, target.y - bounds.height] : [target.y];
-    for (const x of xOptions) if (Math.abs(bounds.x - x) < dx) { dx = Math.abs(bounds.x - x); bestX = x; }
-    for (const y of yOptions) if (Math.abs(bounds.y - y) < dy) { dy = Math.abs(bounds.y - y); bestY = y; }
+function visibleKinds() {
+  return new Set([...windows].filter(([, win]) => !win.isDestroyed() && win.isVisible()).map(([kind]) => kind));
+}
+
+function moveAttached(kind, deltaX, deltaY, includeRoot = false) {
+  if (!deltaX && !deltaY) return;
+  const group = [...(includeRoot ? [kind] : []), ...followersBelow(lastBounds, kind, visibleKinds())];
+  for (const member of group) {
+    const win = windows.get(member);
+    const previous = lastBounds.get(member);
+    if (!win || win.isDestroyed() || !previous) continue;
+    const next = { ...previous, x: previous.x + deltaX, y: previous.y + deltaY };
+    lastBounds.set(member, next);
+    expectedMoves.set(member, next);
+    clearTimeout(snapTimers.get(member));
+    win.setPosition(next.x, next.y);
   }
-  if (bestX !== bounds.x || bestY !== bounds.y) win.setPosition(bestX, bestY);
+}
+
+function handleMove(kind, win) {
+  const current = win.getBounds();
+  const expected = expectedMoves.get(kind);
+  if (expected) {
+    expectedMoves.delete(kind);
+    if (current.x === expected.x && current.y === expected.y) {
+      lastBounds.set(kind, current);
+      return;
+    }
+  }
+  const previous = lastBounds.get(kind);
+  if (!previous) { lastBounds.set(kind, current); return; }
+  const deltaX = current.x - previous.x;
+  const deltaY = current.y - previous.y;
+  if (!deltaX && !deltaY) return;
+  moveAttached(kind, deltaX, deltaY);
+  lastBounds.set(kind, current);
+  clearTimeout(snapTimers.get(kind));
+  snapTimers.set(kind, setTimeout(() => snapWindow(kind), 250));
+}
+
+function snapWindow(kind) {
+  const win = windows.get(kind);
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  const visible = visibleKinds();
+  const bounds = new Map([...windows].filter(([name]) => visible.has(name)).map(([name, window]) => [name, window.getBounds()]));
+  const followers = new Set(followersBelow(bounds, kind, visible));
+  const snap = findVerticalSnap(bounds, kind, visible, followers);
+  if (!snap) return;
+  const current = bounds.get(kind);
+  moveAttached(kind, snap.x - current.x, snap.y - current.y, true);
 }
 
 function createWindow(kind, bounds) {
@@ -119,16 +154,15 @@ function createWindow(kind, bounds) {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, additionalArguments: [`--deskamp-window=${kind}`] }
   });
   windows.set(kind, win);
+  lastBounds.set(kind, { ...bounds });
   win.loadFile(path.join(__dirname, 'index.html'), { query: { window: kind } });
   win.once('ready-to-show', () => { win.show(); broadcast(); });
-  win.on('move', () => {
-    clearTimeout(snapTimers.get(kind));
-    snapTimers.set(kind, setTimeout(() => snapWindow(win), 180));
-  });
+  win.on('move', () => handleMove(kind, win));
+  win.on('resize', () => lastBounds.set(kind, win.getBounds()));
   win.on('close', event => {
     if (kind !== 'player' && !app.isQuitting) { event.preventDefault(); win.hide(); broadcast(); }
   });
-  win.on('closed', () => { windows.delete(kind); if (kind === 'player') app.quit(); });
+  win.on('closed', () => { windows.delete(kind); lastBounds.delete(kind); expectedMoves.delete(kind); clearTimeout(snapTimers.get(kind)); snapTimers.delete(kind); if (kind === 'player') app.quit(); });
   return win;
 }
 
@@ -252,10 +286,10 @@ app.whenReady().then(async () => {
   });
   const area = screen.getPrimaryDisplay().workArea;
   const x = Math.round(area.x + (area.width - 520) / 2);
-  const totalHeight = 232 + 154 + 330 + 4;
+  const totalHeight = 232 + 154 + 330 + 2 * GAP;
   const y = Math.max(area.y + 8, Math.round(area.y + (area.height - totalHeight) / 2));
   createWindow('player', { x, y, width: 520, height: 232 });
-  createWindow('equalizer', { x, y: y + 234, width: 520, height: 154 });
-  createWindow('playlist', { x, y: y + 390, width: 520, height: 330 });
+  createWindow('equalizer', { x, y: y + 232 + GAP, width: 520, height: 154 });
+  createWindow('playlist', { x, y: y + 232 + GAP + 154 + GAP, width: 520, height: 330 });
   app.on('activate', () => { for (const win of windows.values()) win.show(); });
 });

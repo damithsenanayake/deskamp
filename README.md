@@ -1,6 +1,6 @@
 # DeskAmp
 
-DeskAmp is a compact desktop amplifier for local music on macOS and Linux. It has three **real, independent windows**: the player, a five-band equalizer, and the playlist editor. Drag them independently; nearby edges snap together. Its name, graphics, and UI code are original.
+DeskAmp is a compact desktop amplifier for local music on macOS and Linux. It has three **real, independent windows**: the player, a five-band equalizer, and the playlist editor. Nearby vertical edges snap together. Moving a window carries every window attached below it; dragging a lower window away detaches that part of the stack. Its name, graphics, and UI code are original.
 
 ## Run
 

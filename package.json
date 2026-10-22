@@ -1,6 +1,6 @@
 {
   "name": "deskamp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "A compact desktop music player for macOS and Linux",
   "author": "DeskAmp contributors",
@@ -9,7 +9,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/docking.js",
+    "test": "node --test tests/*.test.js",
     "icon": "node scripts/generate-icon.js",
     "dist:mac": "electron-builder --mac dmg zip",
     "dist:mac:intel": "electron-builder --mac dmg zip --x64",
