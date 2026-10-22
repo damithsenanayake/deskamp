@@ -1,6 +1,7 @@
 const GAP = 2;
 const ATTACHED_TOLERANCE = 4;
-const SNAP_DISTANCE = 18;
+const SNAP_HORIZONTAL_DISTANCE = 42;
+const SNAP_VERTICAL_DISTANCE = 18;
 
 function followersBelow(bounds, root, visible = new Set(bounds.keys())) {
   const followers = [];
@@ -30,10 +31,10 @@ function findVerticalSnap(bounds, root, visible = new Set(bounds.keys()), exclud
   for (const [kind, target] of bounds) {
     if (kind === root || !visible.has(kind) || excluded.has(kind)) continue;
     const horizontalGap = Math.abs(moving.x - target.x);
-    if (horizontalGap > SNAP_DISTANCE) continue;
+    if (horizontalGap > SNAP_HORIZONTAL_DISTANCE) continue;
     for (const y of [target.y + target.height + GAP, target.y - moving.height - GAP]) {
       const verticalGap = Math.abs(moving.y - y);
-      if (verticalGap > SNAP_DISTANCE) continue;
+      if (verticalGap > SNAP_VERTICAL_DISTANCE) continue;
       const score = horizontalGap + verticalGap;
       if (!best || score < best.score) best = { x: target.x, y, target: kind, score };
     }

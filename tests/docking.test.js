@@ -41,3 +41,16 @@ test('a detached stack snaps directly under another window', () => {
   const snap = findVerticalSnap(bounds, 'equalizer', new Set(bounds.keys()), new Set(['playlist']));
   assert.deepEqual({ x: snap.x, y: snap.y, target: snap.target }, { x: 100, y: 50 + 232 + GAP, target: 'player' });
 });
+
+test('horizontal docking attracts a panel within 42 pixels', () => {
+  const bounds = stack();
+  bounds.set('equalizer', { ...bounds.get('equalizer'), x: 142 });
+  const snap = findVerticalSnap(bounds, 'equalizer', new Set(bounds.keys()), new Set(['playlist']));
+  assert.deepEqual({ x: snap.x, y: snap.y }, { x: 100, y: 50 + 232 + GAP });
+});
+
+test('a larger sideways drag leaves the panel detached', () => {
+  const bounds = stack();
+  bounds.set('equalizer', { ...bounds.get('equalizer'), x: 143 });
+  assert.equal(findVerticalSnap(bounds, 'equalizer', new Set(bounds.keys()), new Set(['playlist'])), null);
+});
