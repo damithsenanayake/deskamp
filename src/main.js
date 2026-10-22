@@ -96,8 +96,44 @@ function visibleKinds() {
   return new Set([...windows].filter(([, win]) => !win.isDestroyed() && win.isVisible()).map(([kind]) => kind));
 }
 
+function syncNativeDocking() {
+  if (process.platform !== 'darwin') return;
+  const visible = visibleKinds();
+  const bounds = new Map([...windows].filter(([kind]) => visible.has(kind)).map(([kind, win]) => [kind, win.getBounds()]));
+  for (const [kind, win] of windows) {
+    if (win.isDestroyed()) continue;
+    const child = bounds.get(kind);
+    const above = child && [...bounds].find(([otherKind, parent]) => otherKind !== kind &&
+      Math.abs(child.x - parent.x) <= 4 &&
+      Math.abs(child.y - (parent.y + parent.height + GAP)) <= 4);
+    const parentWindow = above ? windows.get(above[0]) : null;
+    if (win.getParentWindow() !== parentWindow) win.setParentWindow(parentWindow);
+  }
+}
+
+function hidePanel(win) {
+  if (process.platform === 'darwin') {
+    for (const child of win.getChildWindows()) child.setParentWindow(null);
+  }
+  win.hide();
+  syncNativeDocking();
+}
+
 function moveAttached(kind, deltaX, deltaY, includeRoot = false) {
   if (!deltaX && !deltaY) return;
+  if (process.platform === 'darwin') {
+    if (includeRoot) {
+      const win = windows.get(kind);
+      const previous = lastBounds.get(kind);
+      if (win && previous) {
+        const next = { ...previous, x: previous.x + deltaX, y: previous.y + deltaY };
+        expectedMoves.set(kind, next);
+        win.setPosition(next.x, next.y);
+        for (const [member, attached] of windows) if (!attached.isDestroyed()) lastBounds.set(member, attached.getBounds());
+      }
+    }
+    return;
+  }
   const group = [...(includeRoot ? [kind] : []), ...followersBelow(lastBounds, kind, visibleKinds())];
   for (const member of group) {
     const win = windows.get(member);
@@ -126,7 +162,7 @@ function handleMove(kind, win) {
   const deltaX = current.x - previous.x;
   const deltaY = current.y - previous.y;
   if (!deltaX && !deltaY) return;
-  moveAttached(kind, deltaX, deltaY);
+  if (process.platform !== 'darwin') moveAttached(kind, deltaX, deltaY);
   lastBounds.set(kind, current);
   clearTimeout(snapTimers.get(kind));
   snapTimers.set(kind, setTimeout(() => snapWindow(kind), 250));
@@ -142,6 +178,7 @@ function snapWindow(kind) {
   if (!snap) return;
   const current = bounds.get(kind);
   moveAttached(kind, snap.x - current.x, snap.y - current.y, true);
+  syncNativeDocking();
 }
 
 function createWindow(kind, bounds) {
@@ -156,11 +193,14 @@ function createWindow(kind, bounds) {
   windows.set(kind, win);
   lastBounds.set(kind, { ...bounds });
   win.loadFile(path.join(__dirname, 'index.html'), { query: { window: kind } });
-  win.once('ready-to-show', () => { win.show(); broadcast(); });
+  win.once('ready-to-show', () => { win.show(); syncNativeDocking(); broadcast(); });
+  win.on('will-move', () => {
+    if (process.platform === 'darwin' && win.getParentWindow()) win.setParentWindow(null);
+  });
   win.on('move', () => handleMove(kind, win));
   win.on('resize', () => lastBounds.set(kind, win.getBounds()));
   win.on('close', event => {
-    if (kind !== 'player' && !app.isQuitting) { event.preventDefault(); win.hide(); broadcast(); }
+    if (kind !== 'player' && !app.isQuitting) { event.preventDefault(); hidePanel(win); broadcast(); }
   });
   win.on('closed', () => { windows.delete(kind); lastBounds.delete(kind); expectedMoves.delete(kind); clearTimeout(snapTimers.get(kind)); snapTimers.delete(kind); if (kind === 'player') app.quit(); });
   return win;
@@ -267,9 +307,9 @@ async function dispatch(action, sender) {
     const kind = String(value?.kind || '');
     const target = windows.get(kind);
     if (!target) return;
-    if (value?.command === 'toggle') { if (target.isVisible()) target.hide(); else { target.show(); target.focus(); } }
+    if (value?.command === 'toggle') { if (target.isVisible()) hidePanel(target); else { target.show(); target.focus(); syncNativeDocking(); } }
     if (value?.command === 'minimize') target.minimize();
-    if (value?.command === 'close') { if (kind === 'player') app.quit(); else target.hide(); }
+    if (value?.command === 'close') { if (kind === 'player') app.quit(); else hidePanel(target); }
     broadcast(); return;
   } else return;
   broadcast(); saveSoon();
