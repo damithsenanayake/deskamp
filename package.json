@@ -1,0 +1,32 @@
+{
+  "name": "riffbox",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A compact desktop music player for macOS and Linux",
+  "author": "Riffbox contributors",
+  "desktopName": "Riffbox",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "icon": "node scripts/generate-icon.js",
+    "dist:mac": "electron-builder --mac dmg zip",
+    "dist:mac:intel": "electron-builder --mac dmg zip --x64",
+    "dist:linux": "electron-builder --linux AppImage --x64",
+    "dist:linux:arm64": "electron-builder --linux AppImage --arm64",
+    "dist": "electron-builder --mac --linux"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.riffbox.player",
+    "productName": "Riffbox",
+    "directories": { "output": "release" },
+    "files": ["src/**/*", "package.json", "README.md"],
+    "mac": { "category": "public.app-category.music", "icon": "build/icon.png", "target": ["dmg", "zip"] },
+    "linux": { "category": "AudioVideo", "icon": "build/icon.png", "syncDesktopName": true, "target": ["AppImage"] }
+  }
+}
