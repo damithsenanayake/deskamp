@@ -4,6 +4,8 @@ DeskAmp is a compact desktop amplifier for local music on macOS and Linux. It ha
 
 The controls use a compact black-and-green 1990s desktop style, with a green display, striped titlebars, and bevelled buttons. The pulse icon is original artwork.
 
+![DeskAmp player, equalizer, and playlist editor stacked on a Mac desktop](docs/screenshot.png)
+
 ## Run
 
 Install Node.js 20 or newer, then:
