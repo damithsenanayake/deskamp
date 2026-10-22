@@ -11,6 +11,7 @@ let filters = [];
 let lastProgress = 0;
 let lastPlaylistCurrent = null;
 let lastPlaylistQuery = null;
+let lastMediaTrack = null;
 const audio = $('audio');
 const bands = [
   { label: '60 HZ', frequency: 60, type: 'lowshelf' },
@@ -98,6 +99,7 @@ async function loadAudio(filePath, shouldPlay) {
 }
 function renderPlayer() {
   const track = state.tracks[state.current];
+  updateMediaSession(track);
   $('current-title').textContent = (track?.title || 'NO TRACK LOADED').toUpperCase();
   $('current-artist').textContent = (state.error || track?.artist || 'ADD FILES TO BEGIN').toUpperCase();
   $('track-number').textContent = track ? `${String(state.current + 1).padStart(2, '0')} / ${String(state.tracks.length).padStart(2, '0')}` : '— / —';
@@ -129,6 +131,29 @@ function renderPlayer() {
   else if (state.playing && audio.paused && audio.src) startAudio();
   else if (!state.playing && !audio.paused) audio.pause();
 }
+function updateMediaSession(track) {
+  if (!('mediaSession' in navigator)) return;
+  const trackPath = track?.path || null;
+  if (trackPath !== lastMediaTrack) {
+    lastMediaTrack = trackPath;
+    navigator.mediaSession.metadata = track ? new MediaMetadata({
+      title: track.title,
+      artist: track.artist
+    }) : null;
+  }
+  navigator.mediaSession.playbackState = state.playing ? 'playing' : 'paused';
+}
+function bindMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.setActionHandler('play', () => {
+    if (!state?.playing) dispatch('play-toggle');
+  });
+  navigator.mediaSession.setActionHandler('pause', () => {
+    if (state?.playing) dispatch('play-toggle');
+  });
+  navigator.mediaSession.setActionHandler('previoustrack', () => dispatch('previous'));
+  navigator.mediaSession.setActionHandler('nexttrack', () => dispatch('next'));
+}
 function drawVisualizer() {
   const canvas = $('visualizer');
   const ctx = canvas.getContext('2d');
@@ -148,6 +173,7 @@ function drawVisualizer() {
   frame();
 }
 function bindPlayer() {
+  bindMediaSession();
   $('play').addEventListener('click', () => dispatch('play-toggle'));
   $('previous').addEventListener('click', () => dispatch('previous'));
   $('next').addEventListener('click', () => dispatch('next'));

@@ -17,12 +17,14 @@ Use **+ FILES** or **+ FOLDER** in the playlist window, or drop files and folder
 
 | Action | Shortcut |
 | --- | --- |
-| Play or pause | Space |
-| Previous or next track | Up / Down arrows |
+| Play or pause | Space or keyboard media play/pause key |
+| Previous or next track | Up / Down arrows or keyboard media track keys |
 | Seek five seconds | Left / Right arrows |
 | Search playlist | Command+K on Mac, Ctrl+K on Linux |
 
 Click a playlist row to play it. Right-click one to reveal its file. Use × to remove a row. Shuffle and repeat are on the player; repeat cycles through off, all, and one.
+
+After playback starts, DeskAmp also appears in the system media controls on supported macOS and Linux desktops, so the media keys work while another app is focused.
 
 Hover over an equalizer band or the volume slider and use the mouse wheel to adjust it. The playlist brings the current track into view when playback changes tracks.
 

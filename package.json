@@ -1,7 +1,7 @@
 {
   "name": "deskamp",
   "productName": "DeskAmp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "A compact desktop music player for macOS and Linux",
   "author": "DeskAmp contributors",
