@@ -1,12 +1,12 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-contextBridge.exposeInMainWorld('riffbox', {
-  pickFiles: () => ipcRenderer.invoke('pick-files'),
-  pickFolder: () => ipcRenderer.invoke('pick-folder'),
-  filesFromDrop: paths => ipcRenderer.invoke('files-from-drop', paths),
-  pathForFile: file => webUtils.getPathForFile(file),
-  readLibrary: () => ipcRenderer.invoke('read-library'),
-  writeLibrary: data => ipcRenderer.invoke('write-library', data),
-  mediaUrl: path => ipcRenderer.invoke('media-url', path),
-  revealFile: path => ipcRenderer.invoke('reveal-file', path)
+const kind = process.argv.find(arg => arg.startsWith('--deskamp-window='))?.split('=')[1] || 'player';
+contextBridge.exposeInMainWorld('deskamp', {
+  kind,
+  getState: () => ipcRenderer.invoke('get-state'),
+  dispatch: (type, value) => ipcRenderer.invoke('dispatch', { type, value }),
+  onState: callback => ipcRenderer.on('state', (_event, state) => callback(state)),
+  onPlayerCommand: callback => ipcRenderer.on('player-command', (_event, command) => callback(command)),
+  mediaUrl: filePath => ipcRenderer.invoke('media-url', filePath),
+  pathForFile: file => webUtils.getPathForFile(file)
 });

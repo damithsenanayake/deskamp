@@ -1,10 +1,10 @@
 {
-  "name": "riffbox",
-  "version": "0.1.0",
+  "name": "deskamp",
+  "version": "0.2.0",
   "private": true,
   "description": "A compact desktop music player for macOS and Linux",
-  "author": "Riffbox contributors",
-  "desktopName": "Riffbox",
+  "author": "DeskAmp contributors",
+  "desktopName": "DeskAmp",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -22,8 +22,8 @@
     "electron-builder": "^26.0.0"
   },
   "build": {
-    "appId": "com.riffbox.player",
-    "productName": "Riffbox",
+    "appId": "com.deskamp.player",
+    "productName": "DeskAmp",
     "directories": { "output": "release" },
     "files": ["src/**/*", "package.json", "README.md"],
     "mac": { "category": "public.app-category.music", "icon": "build/icon.png", "target": ["dmg", "zip"] },

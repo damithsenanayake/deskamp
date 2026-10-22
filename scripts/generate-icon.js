@@ -4,30 +4,28 @@ const path = require('node:path');
 
 const size = 1024;
 const pixels = Buffer.alloc(size * (size * 4 + 1));
-const dark = [23, 34, 27];
-const lime = [199, 243, 106];
-const barTops = [458, 338, 410, 254, 365];
-const barXs = [220, 344, 468, 592, 716];
-
-function insideRoundRect(x, y, left, top, right, bottom, radius) {
-  const cx = Math.max(left + radius, Math.min(right - radius, x));
-  const cy = Math.max(top + radius, Math.min(bottom - radius, y));
-  return (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2;
-}
+const shell = [41, 51, 61];
+const border = [123, 143, 150];
+const screen = [10, 27, 28];
+const green = [178, 234, 112];
+const barTops = [482, 378, 438, 315, 405];
+const barXs = [252, 354, 456, 558, 660];
 
 for (let y = 0; y < size; y++) {
   const row = y * (size * 4 + 1);
   for (let x = 0; x < size; x++) {
     const offset = row + 1 + x * 4;
-    if (!insideRoundRect(x, y, 58, 58, 966, 966, 180)) continue;
-    let color = lime;
-    const skewX = x + (y - 512) * 0.075;
+    if (x < 78 || x > 946 || y < 78 || y > 946) continue;
+    let color = shell;
+    if (x < 106 || x > 918 || y < 106 || y > 918) color = border;
+    if (x >= 170 && x <= 854 && y >= 218 && y <= 782) color = screen;
     for (let bar = 0; bar < barXs.length; bar++) {
-      if (insideRoundRect(skewX, y, barXs[bar], barTops[bar], barXs[bar] + 72, 760, 29)) {
-        color = dark;
+      if (x >= barXs[bar] && x < barXs[bar] + 62 && y >= barTops[bar] && y < 700) {
+        color = green;
         break;
       }
     }
+    if (y >= 838 && y <= 856 && x >= 170 && x <= 438) color = green;
     pixels[offset] = color[0];
     pixels[offset + 1] = color[1];
     pixels[offset + 2] = color[2];
