@@ -2,6 +2,8 @@
 
 DeskAmp is a compact desktop amplifier for local music on macOS and Linux. It has three **real windows**: the player, a five-band equalizer, and the playlist editor. Nearby vertical edges snap together; releasing a panel within 42 pixels of horizontal alignment pulls it into the stack. On macOS, docked windows form a native parent-child group and move together; dragging a lower window farther away detaches that part of the stack. On Linux, attached windows are repositioned together as the dragged window moves. Its name, graphics, and UI code are original.
 
+The controls use a compact black-and-green 1990s desktop style, with a green display, striped titlebars, and bevelled buttons. The pulse icon is original artwork.
+
 ## Run
 
 Install Node.js 20 or newer, then:
@@ -36,6 +38,8 @@ npm run dist:linux:arm64
 ```
 
 Packages appear in `release/`. The Mac builds are unsigned, so macOS may require you to explicitly allow them in System Settings. Linux builds are AppImages; make one executable with `chmod +x DeskAmp-*.AppImage` before opening it.
+
+Launch the packaged `DeskAmp.app` on macOS for the DeskAmp Dock name and icon. `npm start` runs through Electron's development app bundle, which macOS labels Electron.
 
 ## Data
 

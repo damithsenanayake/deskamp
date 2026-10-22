@@ -187,7 +187,8 @@ function createWindow(kind, bounds) {
     minHeight: kind === 'playlist' ? 260 : bounds.height,
     maxHeight: kind === 'playlist' ? 800 : bounds.height,
     resizable: kind === 'playlist', frame: false, fullscreenable: false,
-    show: false, backgroundColor: '#242b35', title: `DeskAmp ${kind}`,
+    show: false, backgroundColor: '#1d2a1e', title: `DeskAmp ${kind}`,
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, additionalArguments: [`--deskamp-window=${kind}`] }
   });
   windows.set(kind, win);
@@ -317,6 +318,7 @@ async function dispatch(action, sender) {
 
 app.on('before-quit', () => { app.isQuitting = true; });
 app.whenReady().then(async () => {
+  if (process.platform === 'darwin' && !app.isPackaged) app.dock.setIcon(path.join(__dirname, '..', 'build', 'icon.png'));
   await restoreLibrary();
   ipcMain.handle('get-state', () => snapshot());
   ipcMain.handle('dispatch', (event, action) => dispatch(action, event.sender));

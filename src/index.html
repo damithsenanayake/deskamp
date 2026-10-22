@@ -18,10 +18,11 @@
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M1 12h4l2-4 3 8 3-11 3 7h7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></symbol>
   </svg>
 
   <section class="window player-window" aria-label="Main player">
-    <header class="titlebar"><span class="title-icon">DA</span><strong>DESKAMP</strong><span class="title-detail">MAIN PLAYER</span><span class="title-line"></span><div class="window-buttons"><button data-action="minimize" aria-label="Minimize player">_</button><button data-action="close" aria-label="Quit DeskAmp">×</button></div></header>
+    <header class="titlebar"><svg class="title-icon" aria-hidden="true"><use href="#i-pulse"/></svg><strong>DESKAMP</strong><span class="title-detail">MAIN PLAYER</span><span class="title-line"></span><div class="window-buttons"><button data-action="minimize" aria-label="Minimize player">_</button><button data-action="close" aria-label="Quit DeskAmp">×</button></div></header>
     <div class="player-body">
       <div class="lcd"><div class="lcd-upper"><div class="time-display"><span>PLAY TIME</span><strong id="elapsed">0:00</strong><small>STEREO</small></div><div class="lcd-information"><div class="lcd-status"><span id="deck-mode">STANDBY</span><span id="topbar-status">READY</span></div><h1 id="current-title">NO TRACK LOADED</h1><p id="current-artist">ADD FILES TO BEGIN</p><div class="lcd-details"><span id="track-number">— / —</span><span id="file-type">AUDIO</span><span id="bitrate">LOCAL FILE</span></div></div></div><div class="spectrum-head"><span>20</span><span>100</span><span>1K</span><span>10K</span><span id="spectrum-status">NO SIGNAL</span></div><canvas id="visualizer" width="640" height="100" aria-label="Audio spectrum"></canvas></div>
       <div class="seek-wrap"><span>◂</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="duration">0:00</span></div>
@@ -31,12 +32,12 @@
   </section>
 
   <section class="window equalizer-window" aria-label="Equalizer">
-    <header class="titlebar"><span class="title-icon">DA</span><strong>DESKAMP</strong><span class="title-detail">GRAPHIC EQUALIZER</span><span class="title-line"></span><div class="window-buttons"><button data-action="minimize" aria-label="Minimize equalizer">_</button><button data-action="close" aria-label="Hide equalizer">×</button></div></header>
+    <header class="titlebar"><svg class="title-icon" aria-hidden="true"><use href="#i-pulse"/></svg><strong>DESKAMP</strong><span class="title-detail">GRAPHIC EQUALIZER</span><span class="title-line"></span><div class="window-buttons"><button data-action="minimize" aria-label="Minimize equalizer">_</button><button data-action="close" aria-label="Hide equalizer">×</button></div></header>
     <div class="eq-body"><div class="eq-head"><span>FREQUENCY RESPONSE</span><div><button class="small-control" id="eq-reset">FLAT</button><button class="small-control active" id="eq-toggle" role="switch" aria-checked="true" aria-label="Equalizer enabled">ON</button></div></div><div class="eq-bands" id="eq-bands"></div></div>
   </section>
 
   <section class="window playlist-window" aria-label="Playlist editor">
-    <header class="titlebar"><span class="title-icon">DA</span><strong>DESKAMP</strong><span class="title-detail">PLAYLIST EDITOR</span><span class="title-line"></span><div class="window-buttons"><button data-action="minimize" aria-label="Minimize playlist">_</button><button data-action="close" aria-label="Hide playlist">×</button></div></header>
+    <header class="titlebar"><svg class="title-icon" aria-hidden="true"><use href="#i-pulse"/></svg><strong>DESKAMP</strong><span class="title-detail">PLAYLIST EDITOR</span><span class="title-line"></span><div class="window-buttons"><button data-action="minimize" aria-label="Minimize playlist">_</button><button data-action="close" aria-label="Hide playlist">×</button></div></header>
     <div class="playlist-body"><div class="playlist-toolbar"><span>PLAYLIST <b id="library-count">0 TRACKS</b></span><div><button class="small-control" id="add-files">+ FILES</button><button class="small-control" id="add-folder">+ FOLDER</button></div></div><label class="search"><svg><use href="#i-search"/></svg><input id="search" type="search" placeholder="FIND TRACK" aria-label="Search tracks"></label><div class="list-head"><span>#</span><span>FILE / ARTIST</span><span>TYPE</span><span>TIME</span><span></span></div><div class="track-list" id="track-list" role="list"></div><div class="empty-state" id="empty-state"><strong>PLAYLIST EMPTY</strong><p>DROP AUDIO FILES HERE<br>OR OPEN A FOLDER</p><div><button class="small-control" id="empty-add-files">ADD FILES</button><button class="small-control" id="empty-add-folder">ADD FOLDER</button></div></div><div class="playlist-footer"><span id="playlist-status">READY</span><button class="small-control" id="clear-library">CLEAR LIST</button></div></div>
   </section>
 
