@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { GAP, followersBelow, findVerticalSnap } = require('./docking');
+const { pushHistory, previousIndex, removeFromHistory } = require('./history');
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.m4a', '.aac', '.wav', '.flac', '.ogg', '.opus', '.webm', '.aiff', '.aif']);
 const windows = new Map();
@@ -10,6 +11,7 @@ const snapTimers = new Map();
 const lastBounds = new Map();
 const expectedMoves = new Map();
 let saveTimer;
+let playHistory = [];
 let state = {
   tracks: [], current: -1, playing: false, time: 0, duration: 0,
   shuffle: false, repeat: 'off', volume: 80, muted: false,
@@ -227,6 +229,10 @@ function selectTrack(index, playing = true) {
   if (sameTrack) sendPlayerCommand('seek', 0);
   broadcast(); saveSoon();
 }
+function advanceTo(index) {
+  if (Number.isInteger(index) && index >= 0 && index < state.tracks.length) playHistory = pushHistory(playHistory, state.current, index);
+  return selectTrack(index, true);
+}
 async function addPaths(paths) {
   const files = await collectAudioFiles(paths);
   const seen = new Set(state.tracks.map(track => track.path));
@@ -249,16 +255,18 @@ async function dispatch(action, sender) {
     return choice.canceled ? 0 : addPaths(choice.filePaths);
   }
   if (type === 'import-paths') return addPaths(Array.isArray(value) ? value : []);
-  if (type === 'select-track') return selectTrack(value, true);
+  if (type === 'select-track') return advanceTo(value);
   if (type === 'play-toggle') {
     if (!state.tracks.length) return;
     if (state.current < 0) return selectTrack(0, true);
     state.playing = !state.playing;
   } else if (type === 'next') {
-    return selectTrack(nextIndex(), true);
+    return advanceTo(nextIndex());
   } else if (type === 'previous') {
     if (state.time > 3) { sendPlayerCommand('seek', 0); return; }
-    return selectTrack((state.current - 1 + state.tracks.length) % state.tracks.length, true);
+    const previous = previousIndex(playHistory, state.current, state.tracks.length, state.shuffle);
+    playHistory = previous.history;
+    return selectTrack(previous.index, true);
   } else if (type === 'seek') {
     sendPlayerCommand('seek', Number(value) || 0); return;
   } else if (type === 'set-volume') {
@@ -281,11 +289,12 @@ async function dispatch(action, sender) {
     const index = Number(value);
     if (!Number.isInteger(index) || index < 0 || index >= state.tracks.length) return;
     state.tracks.splice(index, 1);
+    playHistory = removeFromHistory(playHistory, index);
     if (!state.tracks.length) { state.current = -1; state.playing = false; state.time = 0; state.duration = 0; }
     else if (index === state.current) { state.current = Math.min(index, state.tracks.length - 1); state.time = 0; state.duration = state.tracks[state.current].duration || 0; }
     else if (index < state.current) state.current--;
   } else if (type === 'clear-library') {
-    state.tracks = []; state.current = -1; state.playing = false; state.time = 0; state.duration = 0;
+    state.tracks = []; state.current = -1; state.playing = false; state.time = 0; state.duration = 0; playHistory = [];
   } else if (type === 'player-progress') {
     if (sender !== windows.get('player')?.webContents) return;
     state.time = Number(value) || 0; return;
@@ -297,7 +306,7 @@ async function dispatch(action, sender) {
     if (sender !== windows.get('player')?.webContents) return;
     if (state.repeat === 'one') { sendPlayerCommand('restart'); state.playing = true; }
     else if (state.repeat === 'off' && !state.shuffle && state.current === state.tracks.length - 1) { state.playing = false; sendPlayerCommand('seek', 0); }
-    else return selectTrack(nextIndex(), true);
+    else return advanceTo(nextIndex());
   } else if (type === 'player-error') {
     state.error = String(value || 'Unable to play file'); state.playing = false;
   } else if (type === 'reveal-file') {
